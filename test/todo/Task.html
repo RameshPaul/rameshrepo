@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TO DO Task</title>
+<link rel="stylesheet" type="text/css" href="css/style.css"/>
+	<script src="js/jquery-1.10.2.js"></script>
+</head>
+<body id="mainBody">
+<h1 style="position:absolute;top:15px"> To Do Task</h1>
+<div id="taskCompleted" style="background-color:#FFFF00; position:absolute; top:95px; width:200px;"></div>
+<div style="position:absolute;top:145px">
+<form action="php/insert.php" id="searchForm">
+	<input type="text" name="enteredTask" autofocus id="enteredTask" class="inputs" placeholder="Enter your Task Here">
+</form>
+</div>
+<!-- the result of the task search will be rendered inside this div -->
+<div id="result" style="position:absolute;top:205px"></div>
+
+<script>
+var idCount = 0;
+$("mainBody").ready(function(e) 
+{
+	$.ajax({url:"/test/todo/php/retrieve.php",success:function(response)
+	{
+		var data = $.parseJSON(response);
+		$.each( data, function( i, val ) 
+		{
+			idCount++;
+			$("#result").append('<div style="font-size:18px" id="dvcb'+idCount+'"><label style="display: block; padding-left: 15px; text-indent: -15px;"><input type="checkbox" name="CheckBox" value="'+val+'" id="cb'+idCount+'" style="width: 13px; height: 13px; padding: 0; margin:0; vertical-align: bottom; position: relative; top: -1px;*overflow: hidden;"/><b> '+val+' </b><label></div>');
+		});
+		$("#enteredTask").focus();
+ 	}});
+});
+$("#taskCompleted").hide();
+// Attach a submit handler to the form
+$("#searchForm").submit(function(event) 
+{ 
+	// Stop form from submitting normally
+	event.preventDefault();
+	$("#taskCompleted").hide();
+	idCount++;
+	// Get some values from elements on the page:
+	var $form = $(this),
+	term = $form.find("input[name='enteredTask']").val(),
+	url = $form.attr("action");
+	$.post("/test/todo/php/validate.php",{task:term},function(response)
+	{
+		if(response==="true")
+		{
+			$("#taskCompleted").text(" Task already exist!");
+			$("#taskCompleted").show();
+			$("#enteredTask").val("");
+			$("#enteredTask").focus();
+		}
+		else
+		{
+			// Send the data using post
+			var posting = $.post(url, {task: term, status: "Pending"});
+			// Put the results in a div
+			posting.done(function(data) 
+			{	      
+				var finalResult = '<div style="font-size:18px" id="dvcb'+idCount+'"><label style="display: block; padding-left: 15px; text-indent: -15px;"><input type="checkbox" id="cb'+idCount+'" name="CheckBox" value="'+data+'" style="width: 13px; height: 13px; padding: 0; margin:0; vertical-align: bottom; position: relative; top: -1px;*overflow: hidden;"/><b> '+data+'</b></div>';
+				$('#result').append(finalResult);
+				$("#enteredTask").focus();				
+			});
+			$("#enteredTask").val("");
+			$("#enteredTask").focus();
+		}
+	});
+	
+	$("#enteredTask").val("");
+	$("#enteredTask").focus();
+});
+// adding event to the dynamic checkbox
+$("#result").on('change','input[type=checkbox]', function(e)
+{
+	term = $(this).attr("value");
+	if( $(this).is(':checked')) 
+	{
+		$("#dv"+$(this).attr("id")).remove();
+		e.preventDefault();
+	   $.post("/test/todo/php/insert.php", {task: term, status: "Done"}, function(response)
+		{
+			$("#taskCompleted").text("Task Completed");
+			$("#taskCompleted").show();
+		});
+		$("#enteredTask").val("");
+		$("#enteredTask").focus();
+		$("#taskCompleted").hide();
+	}
+});	
+$("#enteredTask").val("");
+$("#enteredTask").focus();
+$("#taskCompleted").hide();
+</script>
+</body>
+</html>
